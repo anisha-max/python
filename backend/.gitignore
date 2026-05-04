@@ -1,0 +1,24 @@
+# Python environment
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables (CRITICAL: Do not leak your ImageKit keys!)
+.env
+
+# Databases
+*.sqlite3
+
+# IDE / Editor folders
+.vscode/
+.idea/
+
+# Distribution / packages
+dist/
+build/
+*.egg-info/

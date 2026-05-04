@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+.brand-color{
+    color: #00FFC2;
+}
+
+body{
+    background-color: black;
+}

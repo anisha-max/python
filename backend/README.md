@@ -84,9 +84,16 @@ Once running, visit `http://127.0.0.1:8000/docs` for interactive API documentati
 - **POST /projects**: Create a new project
   - Content-Type: `multipart/form-data`
   - Form fields: `title`, `description`, `tech_stack`
-  - File field: `video` (video file)
-  
+  - File field: `media` (image or video file)
+  - The backend uploads media to ImageKit and generates an AI caption.
+
 - **GET /projects**: Retrieve all projects
+
+- **GET /projects/{project_id}**: Retrieve a single project by ID
+
+- **PATCH /projects/{project_id}**: Update project metadata, review caption, or change approval status
+
+- **POST /projects/{project_id}/approve**: Approve the project and auto-post approved content to LinkedIn and Instagram
 
 ## Usage with Postman
 
@@ -100,15 +107,16 @@ Once running, visit `http://127.0.0.1:8000/docs` for interactive API documentati
    - `title`: Project title
    - `description`: Project description
    - `tech_stack`: Technologies used
-   - `video`: Select a video file to upload
+   - `media`: Select an image or video file to upload
 
-5. Send the request. The video will be uploaded to ImageKit, project saved, and webhook triggered with video URL.
+5. Send the request. The media will be uploaded to ImageKit and the project will be stored in PostgreSQL.
 
 ## Troubleshooting
 
 - Ensure PostgreSQL is running and the database exists.
+- If you have an existing `projects` table, recreate it or run a migration after schema changes.
 - Check that environment variables are set correctly.
-- If webhook fails, check the URL and network connectivity.
+- If webhook or social posting fails, check the credentials and network connectivity.
 
 ## Project Structure
 
@@ -121,8 +129,10 @@ Once running, visit `http://127.0.0.1:8000/docs` for interactive API documentati
 ├── routes/
 │   └── projects.py      # Project API routes
 ├── services/
-│   ├── webhook.py       # Webhook service
-│   └── imagekit.py      # ImageKit upload service
+│   ├── imagekit.py      # ImageKit upload service
+│   ├── ollama.py        # AI caption generation service
+│   ├── social.py        # LinkedIn and Instagram posting service
+│   └── webhook.py       # Webhook service
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Environment variables template
 └── README.md            # This file

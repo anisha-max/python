@@ -39,6 +39,23 @@ def create_project(
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
+
+    # Auto-post to social media if caption was generated
+    if generated_caption:
+        try:
+            publish_to_linkedin(db_project)
+            db_project.posted_to_linkedin = True
+        except Exception as e:
+            print(f"Failed to post to LinkedIn: {e}")
+
+        try:
+            publish_to_instagram(db_project)
+            db_project.posted_to_instagram = True
+        except Exception as e:
+            print(f"Failed to post to Instagram: {e}")
+
+        db.commit()
+
     return db_project
 
 @router.get("/projects", response_model=list[ProjectSchema])

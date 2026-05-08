@@ -4,7 +4,7 @@ from database import get_db
 from models import Project as ProjectModel
 from schemas import Project as ProjectSchema, ProjectUpdate
 from services.imagekit import upload_media
-from services.ollama import generate_caption
+from services.google_ai import generate_caption
 from services.social import publish_to_instagram, publish_to_linkedin
 
 router = APIRouter()
@@ -43,13 +43,13 @@ def create_project(
     # Auto-post to social media if caption was generated
     if generated_caption:
         try:
-            publish_to_linkedin(db_project)
+            publish_to_linkedin(db_project, generated_caption)
             db_project.posted_to_linkedin = True
         except Exception as e:
             print(f"Failed to post to LinkedIn: {e}")
 
         try:
-            publish_to_instagram(db_project)
+            publish_to_instagram(db_project, generated_caption)
             db_project.posted_to_instagram = True
         except Exception as e:
             print(f"Failed to post to Instagram: {e}")

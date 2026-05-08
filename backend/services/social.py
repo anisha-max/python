@@ -5,15 +5,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LINKEDIN_ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
-LINKEDIN_ORGANIZATION_ID = os.getenv("LINKEDIN_ORGANIZATION_ID")
+LINKEDIN_PERSON_ID = os.getenv("LINKEDIN_PERSON_ID")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID")
 INSTAGRAM_API_VERSION = os.getenv("INSTAGRAM_API_VERSION", "v17.0")
 
 
 def publish_to_linkedin(project, caption: str) -> bool:
-    if not LINKEDIN_ACCESS_TOKEN or not LINKEDIN_ORGANIZATION_ID:
-        raise RuntimeError("LinkedIn credentials are not configured.")
+    if not LINKEDIN_ACCESS_TOKEN or not LINKEDIN_PERSON_ID:
+        raise RuntimeError("LinkedIn credentials are not configured for personal posting.")
+
+    author = f"urn:li:person:{LINKEDIN_PERSON_ID}"
 
     headers = {
         "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
@@ -22,7 +24,7 @@ def publish_to_linkedin(project, caption: str) -> bool:
     }
 
     body = {
-        "author": f"urn:li:organization:{LINKEDIN_ORGANIZATION_ID}",
+        "author": author,
         "lifecycleState": "PUBLISHED",
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {
@@ -50,7 +52,12 @@ def publish_to_linkedin(project, caption: str) -> bool:
     }
 
     response = requests.post("https://api.linkedin.com/v2/ugcPosts", headers=headers, json=body, timeout=30)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise RuntimeError(
+            f"LinkedIn publish failed {response.status_code}: {response.text}"
+        ) from exc
     return True
 
 
@@ -67,11 +74,17 @@ def publish_to_instagram(project, caption: str) -> bool:
     }
 
     create_response = requests.post(create_url, data=create_payload, timeout=30)
-    create_response.raise_for_status()
+    try:
+        create_response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise RuntimeError(
+            f"Instagram media creation failed {create_response.status_code}: {create_response.text}"
+        ) from exc
+
     create_data = create_response.json()
     creation_id = create_data.get("id")
     if not creation_id:
-        raise RuntimeError("Instagram media creation failed.")
+        raise RuntimeError(f"Instagram media creation returned no id: {create_data}")
 
     publish_url = f"https://graph.facebook.com/{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media_publish"
     publish_payload = {
@@ -80,5 +93,10 @@ def publish_to_instagram(project, caption: str) -> bool:
     }
 
     publish_response = requests.post(publish_url, data=publish_payload, timeout=30)
-    publish_response.raise_for_status()
+    try:
+        publish_response.raise_for_status()
+    except requests.HTTPError as exc:
+        raise RuntimeError(
+            f"Instagram publish failed {publish_response.status_code}: {publish_response.text}"
+        ) from exc
     return True

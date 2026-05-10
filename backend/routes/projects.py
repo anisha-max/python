@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
+import json
 from database import get_db
 from models import Project as ProjectModel
 from schemas import Project as ProjectSchema, ProjectUpdate
@@ -23,9 +24,11 @@ def create_project(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     try:
-        generated_caption = generate_caption(title, description, tech_stack)
+        caption_data = generate_caption(title, description, tech_stack)
+        generated_caption = json.dumps(caption_data) if isinstance(caption_data, dict) else caption_data
     except Exception:
         generated_caption = None
+        caption_data = None
 
     db_project = ProjectModel(
         title=title,
@@ -41,15 +44,17 @@ def create_project(
     db.refresh(db_project)
 
     # Auto-post to social media if caption was generated
-    if generated_caption:
+    if caption_data:
         try:
-            publish_to_linkedin(db_project, generated_caption)
+            linkedin_caption = caption_data.get("linkedin_caption", "")
+            publish_to_linkedin(db_project, linkedin_caption, db)
             db_project.posted_to_linkedin = True
         except Exception as e:
             print(f"Failed to post to LinkedIn: {e}")
 
         try:
-            publish_to_instagram(db_project, generated_caption)
+            instagram_caption = caption_data.get("instagram_caption", "")
+            publish_to_instagram(db_project, instagram_caption)
             db_project.posted_to_instagram = True
         except Exception as e:
             print(f"Failed to post to Instagram: {e}")
@@ -93,22 +98,45 @@ def approve_project(project_id: int, db: Session = Depends(get_db)):
     if project.approval_status == "posted" and project.posted_to_linkedin and project.posted_to_instagram:
         return project
 
-    final_caption = project.reviewed_caption or project.generated_caption
+    final_caption = project.reviewed_caption
+    linkedin_caption = None
+    instagram_caption = None
+    
     if not final_caption:
-        final_caption = generate_caption(project.title, project.description, project.tech_stack)
-        project.generated_caption = final_caption
+        try:
+            caption_data = generate_caption(project.title, project.description, project.tech_stack)
+            if isinstance(caption_data, dict):
+                linkedin_caption = caption_data.get("linkedin_caption", "")
+                instagram_caption = caption_data.get("instagram_caption", "")
+                final_caption = linkedin_caption
+                project.generated_caption = json.dumps(caption_data)
+            else:
+                linkedin_caption = caption_data
+                instagram_caption = caption_data
+                final_caption = caption_data
+                project.generated_caption = caption_data
+        except Exception:
+            final_caption = None
+    else:
+        try:
+            caption_json = json.loads(project.generated_caption) if project.generated_caption else {}
+            linkedin_caption = caption_json.get("linkedin_caption", final_caption)
+            instagram_caption = caption_json.get("instagram_caption", final_caption)
+        except Exception:
+            linkedin_caption = final_caption
+            instagram_caption = final_caption
 
     linkedin_result = False
     instagram_result = False
     posting_errors = []
 
     try:
-        linkedin_result = publish_to_linkedin(project, final_caption)
+        linkedin_result = publish_to_linkedin(project, linkedin_caption or final_caption, db)
     except Exception as exc:
         posting_errors.append(f"LinkedIn: {exc}")
 
     try:
-        instagram_result = publish_to_instagram(project, final_caption)
+        instagram_result = publish_to_instagram(project, instagram_caption or final_caption)
     except Exception as exc:
         posting_errors.append(f"Instagram: {exc}")
 

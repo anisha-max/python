@@ -19,3 +19,5 @@ class Project(Base):
     posted_to_instagram = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+from .linkedin_token import LinkedInToken

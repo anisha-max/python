@@ -1,24 +1,26 @@
 import os
 import requests
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from .linkedin_token_service import get_valid_access_token
 
 load_dotenv()
 
-LINKEDIN_ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
 LINKEDIN_PERSON_ID = os.getenv("LINKEDIN_PERSON_ID")
 INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID")
 INSTAGRAM_API_VERSION = os.getenv("INSTAGRAM_API_VERSION", "v17.0")
 
 
-def publish_to_linkedin(project, caption: str) -> bool:
-    if not LINKEDIN_ACCESS_TOKEN or not LINKEDIN_PERSON_ID:
+def publish_to_linkedin(project, caption: str, db: Session) -> bool:
+    if not LINKEDIN_PERSON_ID:
         raise RuntimeError("LinkedIn credentials are not configured for personal posting.")
 
     author = f"urn:li:person:{LINKEDIN_PERSON_ID}"
+    access_token = get_valid_access_token(db)
 
     headers = {
-        "Authorization": f"Bearer {LINKEDIN_ACCESS_TOKEN}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
         "X-Restli-Protocol-Version": "2.0.0",
     }
@@ -65,10 +67,9 @@ def publish_to_instagram(project, caption: str) -> bool:
     if not INSTAGRAM_ACCESS_TOKEN or not INSTAGRAM_ACCOUNT_ID:
         raise RuntimeError("Instagram credentials are not configured.")
 
-    media_key = "video_url" if project.media_type and project.media_type.startswith("video") else "image_url"
     create_url = f"https://graph.facebook.com/{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media"
     create_payload = {
-        media_key: project.media_url,
+        "image_url": project.media_url,
         "caption": caption,
         "access_token": INSTAGRAM_ACCESS_TOKEN,
     }

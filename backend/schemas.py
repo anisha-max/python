@@ -26,6 +26,7 @@ class Project(ProjectBase):
     approval_status: str
     posted_to_linkedin: bool
     posted_to_instagram: bool
+    posted_to_facebook: bool
     created_at: datetime
     updated_at: datetime
 

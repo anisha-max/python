@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from .linkedin_token_service import get_valid_access_token
@@ -7,10 +8,12 @@ from .linkedin_token_service import get_valid_access_token
 load_dotenv()
 
 LINKEDIN_PERSON_ID = os.getenv("LINKEDIN_PERSON_ID")
-INSTAGRAM_ACCESS_TOKEN = os.getenv("INSTAGRAM_ACCESS_TOKEN")
 INSTAGRAM_ACCOUNT_ID = os.getenv("INSTAGRAM_ACCOUNT_ID")
 INSTAGRAM_API_VERSION = os.getenv("INSTAGRAM_API_VERSION", "v17.0")
-
+FACEBOOK_PAGE_ID = os.getenv("FACEBOOK_PAGE_ID")
+FACEBOOK_ACCESS_TOKEN = os.getenv("FACEBOOK_ACCESS_TOKEN")
+FACEBOOK_API_VERSION = os.getenv("FACEBOOK_API_VERSION", "v17.0")
+INSTAGRAM_ACCESS_TOKEN = FACEBOOK_ACCESS_TOKEN
 
 def publish_to_linkedin(project, caption: str, db: Session) -> bool:
     if not LINKEDIN_PERSON_ID:
@@ -64,40 +67,82 @@ def publish_to_linkedin(project, caption: str, db: Session) -> bool:
 
 
 def publish_to_instagram(project, caption: str) -> bool:
-    if not INSTAGRAM_ACCESS_TOKEN or not INSTAGRAM_ACCOUNT_ID:
-        raise RuntimeError("Instagram credentials are not configured.")
+    create_url = (
+        f"https://graph.facebook.com/"
+        f"{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media"
+    )
 
-    create_url = f"https://graph.facebook.com/{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media"
-    create_payload = {
-        "image_url": project.media_url,
-        "caption": caption,
-        "access_token": INSTAGRAM_ACCESS_TOKEN,
-    }
+    create_response = requests.post(
+        create_url,
+        data={
+            "image_url": project.media_url,
+            "caption": caption,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        },
+        timeout=60,
+    )
 
-    create_response = requests.post(create_url, data=create_payload, timeout=30)
+    print("INSTAGRAM CREATE:", create_response.text)
+
+    create_response.raise_for_status()
+
+    creation_id = create_response.json()["id"]
+
+    publish_url = (
+        f"https://graph.facebook.com/"
+        f"{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media_publish"
+    )
+
+    publish_response = requests.post(
+        publish_url,
+        data={
+            "creation_id": creation_id,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        },
+        timeout=60,
+    )
+
+    print("INSTAGRAM PUBLISH:", publish_response.text)
+
+    publish_response.raise_for_status()
+
+    return True
+
+def publish_to_facebook(project, caption: str) -> bool:
+    if not FACEBOOK_PAGE_ID or not FACEBOOK_ACCESS_TOKEN:
+        raise RuntimeError("Facebook credentials are not configured.")
+
+    # IMAGE
+    if project.media_type == "image":
+
+        url = f"https://graph.facebook.com/{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/photos"
+
+        payload = {
+            "url": project.media_url,
+            "caption": caption,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        }
+
+    # VIDEO
+    else:
+
+        url = f"https://graph.facebook.com/{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/videos"
+
+        payload = {
+            "file_url": project.media_url,
+            "description": caption,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        }
+
+    response = requests.post(url, data=payload, timeout=120)
+
+    print("FACEBOOK RESPONSE:", response.text)
+
     try:
-        create_response.raise_for_status()
+        response.raise_for_status()
     except requests.HTTPError as exc:
         raise RuntimeError(
-            f"Instagram media creation failed {create_response.status_code}: {create_response.text}"
+            f"Facebook publish failed {response.status_code}: {response.text}"
         ) from exc
 
-    create_data = create_response.json()
-    creation_id = create_data.get("id")
-    if not creation_id:
-        raise RuntimeError(f"Instagram media creation returned no id: {create_data}")
-
-    publish_url = f"https://graph.facebook.com/{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media_publish"
-    publish_payload = {
-        "creation_id": creation_id,
-        "access_token": INSTAGRAM_ACCESS_TOKEN,
-    }
-
-    publish_response = requests.post(publish_url, data=publish_payload, timeout=30)
-    try:
-        publish_response.raise_for_status()
-    except requests.HTTPError as exc:
-        raise RuntimeError(
-            f"Instagram publish failed {publish_response.status_code}: {publish_response.text}"
-        ) from exc
     return True

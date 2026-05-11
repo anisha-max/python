@@ -6,7 +6,7 @@ from models import Project as ProjectModel
 from schemas import Project as ProjectSchema, ProjectUpdate
 from services.imagekit import upload_media
 from services.google_ai import generate_caption
-from services.social import publish_to_instagram, publish_to_linkedin
+from services.social import publish_to_instagram, publish_to_linkedin , publish_to_facebook
 
 router = APIRouter()
 
@@ -26,16 +26,21 @@ def create_project(
     try:
         caption_data = generate_caption(title, description, tech_stack)
         generated_caption = json.dumps(caption_data) if isinstance(caption_data, dict) else caption_data
-    except Exception:
+    except Exception as exc:
+        print(f"Caption generation failed: {exc}")
         generated_caption = None
         caption_data = None
-
+    media_type = (
+    "video"
+    if media.content_type and media.content_type.startswith("video")
+    else "image"
+    )
     db_project = ProjectModel(
         title=title,
         description=description,
         tech_stack=tech_stack,
         media_url=media_url,
-        media_type=media.content_type or "video",
+        media_type=media_type,
         generated_caption=generated_caption,
         approval_status="pending_review",
     )
@@ -45,12 +50,12 @@ def create_project(
 
     # Auto-post to social media if caption was generated
     if caption_data:
-        try:
-            linkedin_caption = caption_data.get("linkedin_caption", "")
-            publish_to_linkedin(db_project, linkedin_caption, db)
-            db_project.posted_to_linkedin = True
-        except Exception as e:
-            print(f"Failed to post to LinkedIn: {e}")
+        # try:
+        #     linkedin_caption = caption_data.get("linkedin_caption", "")
+        #     publish_to_linkedin(db_project, linkedin_caption, db)
+        #     db_project.posted_to_linkedin = True
+        # except Exception as e:
+        #     print(f"Failed to post to LinkedIn: {e}")
 
         try:
             instagram_caption = caption_data.get("instagram_caption", "")
@@ -58,6 +63,13 @@ def create_project(
             db_project.posted_to_instagram = True
         except Exception as e:
             print(f"Failed to post to Instagram: {e}")
+
+        try:
+            facebook_caption = caption_data.get("linkedin_caption", "")
+            publish_to_facebook(db_project, facebook_caption)
+            db_project.posted_to_facebook = True
+        except Exception as e:
+            print(f"Failed to post to Facebook: {e}")
 
         db.commit()
 
@@ -128,6 +140,7 @@ def approve_project(project_id: int, db: Session = Depends(get_db)):
 
     linkedin_result = False
     instagram_result = False
+    facebook_result = False
     posting_errors = []
 
     try:
@@ -139,10 +152,19 @@ def approve_project(project_id: int, db: Session = Depends(get_db)):
         instagram_result = publish_to_instagram(project, instagram_caption or final_caption)
     except Exception as exc:
         posting_errors.append(f"Instagram: {exc}")
+    
+    try:
+        facebook_result = publish_to_facebook(
+        project,
+        linkedin_caption or final_caption
+    )
+    except Exception as exc:
+        posting_errors.append(f"Facebook: {exc}")
 
     project.posted_to_linkedin = linkedin_result
     project.posted_to_instagram = instagram_result
-    project.approval_status = "posted" if linkedin_result and instagram_result else "approved"
+    project.posted_to_facebook = facebook_result
+    project.approval_status = "posted" if linkedin_result and instagram_result and facebook_result else "approved"
 
     db.add(project)
     db.commit()

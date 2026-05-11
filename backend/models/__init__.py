@@ -17,6 +17,7 @@ class Project(Base):
     approval_status = Column(String, default="pending_review")
     posted_to_linkedin = Column(Boolean, default=False)
     posted_to_instagram = Column(Boolean, default=False)
+    posted_to_facebook = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

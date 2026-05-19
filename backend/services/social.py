@@ -242,37 +242,58 @@ def publish_to_facebook(project, caption: str) -> bool:
     if not FACEBOOK_PAGE_ID or not FACEBOOK_ACCESS_TOKEN:
         raise RuntimeError("Facebook credentials are not configured.")
 
-    # IMAGE
+    headers = {
+        "Authorization": f"Bearer {FACEBOOK_ACCESS_TOKEN}"
+    }
+
+    # IMAGE POST
     if project.media_type == "image":
 
-        url = f"https://graph.facebook.com/{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/photos"
+        url = (
+            f"https://graph.facebook.com/"
+            f"{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/photos"
+        )
 
         payload = {
             "url": project.media_url,
             "caption": caption,
-            "access_token": FACEBOOK_ACCESS_TOKEN,
         }
 
-    # VIDEO
+    # VIDEO POST
     else:
 
-        url = f"https://graph.facebook.com/{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/videos"
+        url = (
+            f"https://graph-video.facebook.com/"
+            f"{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/videos"
+        )
 
         payload = {
             "file_url": project.media_url,
             "description": caption,
-            "access_token": FACEBOOK_ACCESS_TOKEN,
         }
 
-    response = requests.post(url, data=payload, timeout=120)
+    response = requests.post(
+        url,
+        data=payload,
+        headers=headers,
+        timeout=120,
+    )
 
+    print("FACEBOOK STATUS:", response.status_code)
     print("FACEBOOK RESPONSE:", response.text)
 
     try:
         response.raise_for_status()
+
     except requests.HTTPError as exc:
+
+        try:
+            error_data = response.json()
+        except Exception:
+            error_data = response.text
+
         raise RuntimeError(
-            f"Facebook publish failed {response.status_code}: {response.text}"
+            f"Facebook publish failed: {error_data}"
         ) from exc
 
     return True

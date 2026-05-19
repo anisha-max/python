@@ -51,12 +51,12 @@ def create_project(
 
     # Auto-post to social media if caption was generated
     if caption_data:
-        try:
-            linkedin_caption = caption_data.get("linkedin_caption", "")
-            publish_to_linkedin(db_project, linkedin_caption, media , db)
-            db_project.posted_to_linkedin = True
-        except Exception as e:
-            print(f"Failed to post to LinkedIn: {e}")
+        # try:
+        #     linkedin_caption = caption_data.get("linkedin_caption", "")
+        #     publish_to_linkedin(db_project, linkedin_caption, media , db)
+        #     db_project.posted_to_linkedin = True
+        # except Exception as e:
+        #     print(f"Failed to post to LinkedIn: {e}")
 
         try:
             instagram_caption = caption_data.get("instagram_caption", "")

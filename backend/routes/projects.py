@@ -19,6 +19,7 @@ def create_project(
     db: Session = Depends(get_db)
 ):
     try:
+        media.file.seek(0)
         media_url = upload_media(media)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -50,12 +51,12 @@ def create_project(
 
     # Auto-post to social media if caption was generated
     if caption_data:
-        # try:
-        #     linkedin_caption = caption_data.get("linkedin_caption", "")
-        #     publish_to_linkedin(db_project, linkedin_caption, db)
-        #     db_project.posted_to_linkedin = True
-        # except Exception as e:
-        #     print(f"Failed to post to LinkedIn: {e}")
+        try:
+            linkedin_caption = caption_data.get("linkedin_caption", "")
+            publish_to_linkedin(db_project, linkedin_caption, media , db)
+            db_project.posted_to_linkedin = True
+        except Exception as e:
+            print(f"Failed to post to LinkedIn: {e}")
 
         try:
             instagram_caption = caption_data.get("instagram_caption", "")

@@ -197,19 +197,35 @@ def publish_to_linkedin(project, caption: str, media, db: Session) -> bool:
 
 
 def publish_to_instagram(project, caption: str) -> bool:
+
     create_url = (
         f"https://graph.facebook.com/"
         f"{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media"
     )
 
-    create_response = requests.post(
-        create_url,
-        data={
+    # IMAGE
+    if project.media_type == "image":
+
+        payload = {
             "image_url": project.media_url,
             "caption": caption,
             "access_token": FACEBOOK_ACCESS_TOKEN,
-        },
-        timeout=60,
+        }
+
+    # VIDEO / REEL
+    else:
+
+        payload = {
+            "media_type": "REELS",
+            "video_url": project.media_url,
+            "caption": caption,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        }
+
+    create_response = requests.post(
+        create_url,
+        data=payload,
+        timeout=120,
     )
 
     print("INSTAGRAM CREATE:", create_response.text)
@@ -217,6 +233,42 @@ def publish_to_instagram(project, caption: str) -> bool:
     create_response.raise_for_status()
 
     creation_id = create_response.json()["id"]
+
+    # IMPORTANT FOR VIDEOS
+    if project.media_type == "video":
+
+        status_url = (
+            f"https://graph.facebook.com/"
+            f"{INSTAGRAM_API_VERSION}/{creation_id}"
+        )
+
+        for _ in range(30):
+
+            status_response = requests.get(
+                status_url,
+                params={
+                    "fields": "status_code",
+                    "access_token": FACEBOOK_ACCESS_TOKEN,
+                },
+                timeout=30,
+            )
+
+            status_response.raise_for_status()
+
+            status = status_response.json().get("status_code")
+
+            print("INSTAGRAM STATUS:", status)
+
+            if status == "FINISHED":
+                break
+
+            elif status == "ERROR":
+                raise RuntimeError("Instagram video processing failed")
+
+            time.sleep(5)
+
+        else:
+            raise RuntimeError("Instagram video processing timeout")
 
     publish_url = (
         f"https://graph.facebook.com/"
@@ -229,7 +281,7 @@ def publish_to_instagram(project, caption: str) -> bool:
             "creation_id": creation_id,
             "access_token": FACEBOOK_ACCESS_TOKEN,
         },
-        timeout=60,
+        timeout=120,
     )
 
     print("INSTAGRAM PUBLISH:", publish_response.text)

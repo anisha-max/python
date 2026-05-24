@@ -9,7 +9,7 @@ const ProjectCardProject = ({ project, isEven }) => {
         <div className="relative group">
           <div className="absolute -inset-1 bg-[#00FFCA] rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-500"></div>
           <img
-            src={project.images?.[0] ?? project.image ?? ""}
+            src={project.media_url}
             alt={project.title}
             className="relative rounded-2xl border border-white/10 w-full md:max-h-[60vh] shadow-2xl"
           />

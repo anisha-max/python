@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { HiOutlineArrowLeft, HiOutlineArrowRight } from "react-icons/hi2";
 import ProjectCardProject from '../components/ProjectCardProject';
-
 import { fetchProjects } from "../services/api";
 import { projects as fallbackProjects } from "../data/project";
 
@@ -35,6 +34,7 @@ const Projects = () => {
       .then((projects) => {
         if (!active) return;
         setProjects(projects || []);
+        console.log(projects)
       })
       .catch((err) => {
         console.error(err);
@@ -52,7 +52,7 @@ const Projects = () => {
     };
   }, []);
 
-  const projectList = projects.length > 0 ? projects : fallbackProjects;
+  // const projectList = projects.length > 0 ? projects : fallbackProjects;
 
   return (
 <>
@@ -72,7 +72,7 @@ const Projects = () => {
             <div className="text-center text-gray-400 py-20">Loading projects...</div>
           ) : (
             <section>
-              {projectList.map((item, index) => (
+              {projects.map((item, index) => (
                 <ProjectCardProject
                   key={item.id ?? index}
                   project={item}

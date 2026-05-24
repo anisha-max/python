@@ -17,6 +17,7 @@ def upload_media(file):
             folder="/python/",
             use_unique_file_name=True,
         )
+        print(upload_info.url)
     except Exception as exc:
         raise RuntimeError(f"ImageKit upload failed: {exc}") from exc
 

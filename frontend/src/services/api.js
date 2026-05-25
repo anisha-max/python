@@ -30,3 +30,19 @@ export function slugify(text) {
     .replace(/[^\w-]+/g, "")
     .replace(/--+/g, "-");
 }
+
+
+export const createProject = async (data) => {
+  try {
+    const response = await fetch("http://localhost:8000/projects", {
+      method: "POST",
+      body: data,
+    });
+
+    const res = await response.json();
+    console.log(res);
+    return res;
+  } catch (error) {
+    console.error(error);
+  }
+};

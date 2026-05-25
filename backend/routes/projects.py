@@ -242,29 +242,29 @@ def create_project(
         time.sleep(10)
         # LINKEDIN
 
-        # try:
+        try:
         
-        #     linkedin_caption = (
-        #         caption_data.get(
-        #             "linkedin_caption",
-        #             ""
-        #         )
-        #     )
+            linkedin_caption = (
+                caption_data.get(
+                    "linkedin_caption",
+                    ""
+                )
+            )
         
-        #     publish_to_linkedin(
-        #         db_project,
-        #         linkedin_caption,
-        #         media,
-        #         db
-        #     )
+            publish_to_linkedin(
+                db_project,
+                linkedin_caption,
+                media,
+                db
+            )
         
-        #     db_project.posted_to_linkedin = True
+            db_project.posted_to_linkedin = True
         
-        # except Exception as e:
+        except Exception as e:
         
-        #     print(
-        #         f"Failed to post to LinkedIn: {e}"
-        #     )
+            print(
+                f"Failed to post to LinkedIn: {e}"
+            )
 
         # INSTAGRAM
 

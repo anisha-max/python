@@ -8,6 +8,7 @@ import Contact from './pages/Contact'
 import Services from './pages/Services'
 import ScrollToTop from './components/ScrollToTop'
 import ProjectDetail from './pages/ProjectDetail'
+import ProjectForm from './pages/ProjectForm'
 
 
 function App() {
@@ -23,7 +24,8 @@ function App() {
         <Route path='/projects' element={<Projects />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/services' element={<Services key={location.pathname}/>} />
-         <Route path="/projects/:slug" element={<ProjectDetail/>} />
+        <Route path="/projects/:slug" element={<ProjectDetail/>} />
+        <Route path="/add-project" element={<ProjectForm/>} />
       </Routes>
     </>
   )

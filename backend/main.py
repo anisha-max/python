@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from database import engine
 from models import Base
-from routes import projects
+from routes import projects , login
 from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(projects.router)
+app.include_router(login.router)
 
 @app.get("/auth/linkedin/callback")
 async def linkedin_callback(request: Request):

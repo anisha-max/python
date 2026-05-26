@@ -31,6 +31,7 @@ from services.social import (
     publish_to_linkedin,
     publish_to_facebook
 )
+from auth import verify_token
 
 router = APIRouter()
 
@@ -40,7 +41,7 @@ router = APIRouter()
     response_model=ProjectSchema
 )
 def create_project(
-
+    _: dict = Depends(verify_token),
     title: str = Form(...),
 
     description: str = Form(...),

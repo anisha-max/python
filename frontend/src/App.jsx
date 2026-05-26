@@ -9,6 +9,8 @@ import Services from './pages/Services'
 import ScrollToTop from './components/ScrollToTop'
 import ProjectDetail from './pages/ProjectDetail'
 import ProjectForm from './pages/ProjectForm'
+import AdminLogin from './pages/Login'
+import ProtectedRoute from './components/ProtectedRoute'
 
 
 function App() {
@@ -16,16 +18,24 @@ function App() {
 
   return (
     <>
-    <ScrollToTop />
+      <ScrollToTop />
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/about' element={<About />} />
         <Route path='/achievements' element={<Achievements />} />
         <Route path='/projects' element={<Projects />} />
         <Route path='/contact' element={<Contact />} />
-        <Route path='/services' element={<Services key={location.pathname}/>} />
-        <Route path="/projects/:slug" element={<ProjectDetail/>} />
-        <Route path="/add-project" element={<ProjectForm/>} />
+        <Route path='/services' element={<Services key={location.pathname} />} />
+        <Route path="/projects/:slug" element={<ProjectDetail />} />
+        <Route
+          path="/add-project"
+          element={
+            <ProtectedRoute>
+              <ProjectForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/login" element={<AdminLogin />} />
       </Routes>
     </>
   )

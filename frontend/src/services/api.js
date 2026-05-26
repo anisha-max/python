@@ -33,16 +33,39 @@ export function slugify(text) {
 
 
 export const createProject = async (data) => {
+
   try {
-    const response = await fetch("http://localhost:8000/projects", {
-      method: "POST",
-      body: data,
-    });
+
+    const token =
+      localStorage.getItem("token");
+
+    const response = await fetch(
+      "http://localhost:8000/projects",
+      {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: data,
+      }
+    );
 
     const res = await response.json();
-    console.log(res);
+
+    if (!response.ok) {
+      throw new Error(
+        res.detail || "Request failed"
+      );
+    }
+
     return res;
+
   } catch (error) {
+
     console.error(error);
+
+    throw error;
   }
 };

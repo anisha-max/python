@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { fetchProjects, slugify } from "../services/api";
+import { fetchProjectDetails, slugify } from "../services/api";
 import { projects as fallbackProjects } from "../data/project";
 
 const normalizeProject = (project) => {
@@ -19,35 +19,36 @@ const normalizeProject = (project) => {
   };
 };
 
-const findProjectBySlug = (projects, slug) => {
-  return projects.find((project) => {
-    const projectSlug = project.slug ?? slugify(project.title);
-    return projectSlug === slug;
-  });
-};
+// const findProjectBySlug = (projects, slug) => {
+//   return projects.find((project) => {
+//     const projectSlug = project.slug ?? slugify(project.title);
+//     return projectSlug === slug;
+//   });
+// };
 
 const ProjectDetail = () => {
-  const { slug } = useParams();
+  const { project_id } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [features, setFeatures] = useState([])
 
   useEffect(() => {
     let active = true;
-
-    fetchProjects()
-      .then((projects) => {
+    console.log("project_id:", project_id);
+    fetchProjectDetails(project_id)
+      .then((project) => {
         if (!active) {
           return;
         }
-        const found = findProjectBySlug(projects, slug);
-        setProject(normalizeProject(found || findProjectBySlug(fallbackProjects, slug)));
+        const found = project
+        setFeatures(project.features?.split(",") || [])
+        setProject(normalizeProject(found));
       })
       .catch((err) => {
         console.error(err);
         if (active) {
-          setError("Unable to load project from API.");
-          setProject(normalizeProject(findProjectBySlug(fallbackProjects, slug)));
+          setError("Unable to load project ");
         }
       })
       .finally(() => {
@@ -59,7 +60,9 @@ const ProjectDetail = () => {
     return () => {
       active = false;
     };
-  }, [slug]);
+  }, [project_id]);
+
+
 
   if (loading) {
     return (
@@ -141,30 +144,30 @@ const ProjectDetail = () => {
         <div className="space-y-8">
           <Section title="Problem" content={project.problem} />
           <Section title="Solution" content={project.solution} />
-        {project.architecture && (  <Section title="Architecture" content={project.architecture} />)}
-          {project.uiConsistency && (  <Section title="UI Consistency" content={project.uiConsistency} />)}
+          {project.architecture && (<Section title="Architecture" content={project.architecture} />)}
+          {project.uiConsistency && (<Section title="UI Consistency" content={project.uiConsistency} />)}
           <Section title="Challenges" content={project.challenges} />
           <Section title="Learnings" content={project.learnings} />
         </div>
-                {project.responsibilities && (
-   <div>
-          <h3 className="text-xl font-semibold mb-4">Responsibilities</h3>
-          <ul className="grid md:grid-cols-2 gap-3 text-gray-300">
-            {project.responsibilities.map((f, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="text-[#00f2ad]">▹</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-        </div>
-)}
+        {project.responsibilities && (
+          <div>
+            <h3 className="text-xl font-semibold mb-4">Responsibilities</h3>
+            <ul className="grid md:grid-cols-2 gap-3 text-gray-300">
+              {project.responsibilities.map((f, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-[#00f2ad]">▹</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Features */}
         <div>
           <h3 className="text-xl font-semibold mb-4">Key Features</h3>
           <ul className="grid md:grid-cols-2 gap-3 text-gray-300">
-            {project.features.map((f, i) => (
+            {features.map((f, i) => (
               <li key={i} className="flex gap-2">
                 <span className="text-[#00f2ad]">▹</span>
                 {f}
@@ -174,7 +177,7 @@ const ProjectDetail = () => {
         </div>
 
 
-         {project.technicalDecisions && (   <div>
+        {project.technicalDecisions && (<div>
           <h3 className="text-xl font-semibold mb-4">Technical Decisions</h3>
           <ul className="grid md:grid-cols-2 gap-3 text-gray-300">
             {project.technicalDecisions.map((f, i) => (
@@ -186,7 +189,7 @@ const ProjectDetail = () => {
           </ul>
         </div>)}
 
-          {project.userFlow && ( <div>
+        {project.userFlow && (<div>
           <h3 className="text-xl font-semibold mb-4">User Flow</h3>
           <ul className="grid md:grid-cols-2 gap-3 text-gray-300">
             {project.userFlow.map((f, i) => (

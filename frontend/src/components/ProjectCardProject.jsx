@@ -41,7 +41,7 @@ const ProjectCardProject = ({ project, isEven }) => {
             View Live →
           </a>
           <Link
-            to={`/projects/${project.slug ?? project.title?.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") ?? ""}`}
+            to={`/projects/${project.id}`}
             className=' px-8 py-3 bg-[#00FFCA] text-black font-bold rounded-lg hover:shadow-[0_0_20px_rgba(0,255,202,0.4)] transition-all w-fit'
           >
             Details

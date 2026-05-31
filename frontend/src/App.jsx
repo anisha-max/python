@@ -26,7 +26,7 @@ function App() {
         <Route path='/projects' element={<Projects />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/services' element={<Services key={location.pathname} />} />
-        <Route path="/projects/:slug" element={<ProjectDetail />} />
+        <Route path="/projects/:project_id" element={<ProjectDetail />} />
         <Route
           path="/add-project"
           element={

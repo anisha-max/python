@@ -69,3 +69,20 @@ export const createProject = async (data) => {
     throw error;
   }
 };
+
+export async function fetchProjectDetails(project_id) {
+
+  const response = await fetch(
+    `${API_BASE}/projects/${project_id}`
+  );
+
+  console.log("STATUS:", response.status);
+
+  const data = await response.json();
+
+  console.log("DATA:", data);
+
+  return data;
+}
+
+

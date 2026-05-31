@@ -62,6 +62,7 @@ function FileUpload({ label, name, onChange }) {
       <input
         type="file"
         name={name}
+        multiple
         onChange={onChange}
         className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-white file:bg-[#00f2ad] file:border-0 file:px-4 file:py-2 file:rounded-lg file:text-black file:font-semibold"
       />
@@ -90,8 +91,7 @@ export default function ProjectForm() {
     github_link: "",
     live_link: "",
     tech_stack: "",
-    media: null,
-    media_type: "video",
+    media_files: [],
   });
 
   const handleChange = (e) => {
@@ -102,31 +102,35 @@ export default function ProjectForm() {
       [name]: value,
     }));
   };
-const handleFileChange = (e) => {
-  const file = e.target.files[0];
+  const handleFileChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      media_files: Array.from(e.target.files),
+    }));
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  setFormData((prev) => ({
-    ...prev,
-    media: file,
-  }));
-};
-const handleSubmit = async (e) => {
-  e.preventDefault();
+    const data = new FormData();
 
-  const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === "media_files") {
+        value.forEach((file) => {
+          data.append("media_files", file);
+        });
+      } else {
+        data.append(key, value);
+      }
+    });
 
-  Object.keys(formData).forEach((key) => {
-    data.append(key, formData[key]);
-  });
+    try {
+      const response = await createProject(data);
 
-  try {
-    const response = await createProject(data);
-
-    console.log(response);
-  } catch (err) {
-    console.error(err);
-  }
-};
+      console.log(response);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <section className="bg-black text-white min-h-screen px-6 py-20">
@@ -191,14 +195,6 @@ const handleSubmit = async (e) => {
                 value={formData.status}
                 onChange={handleChange}
                 placeholder="Completed"
-              />
-
-              <Input
-                label="Media Type"
-                name="media_type"
-                value={formData.media_type}
-                onChange={handleChange}
-                placeholder="video / image"
               />
             </div>
           </div>
@@ -336,11 +332,11 @@ const handleSubmit = async (e) => {
                 placeholder="React, FastAPI, PostgreSQL"
               />
 
-         <FileUpload
-  label="Upload Media"
-  name="media"
-  onChange={handleFileChange}
-/>
+              <FileUpload
+                label="Upload Media"
+                name="media_files"
+                onChange={handleFileChange}
+              />
             </div>
           </div>
 

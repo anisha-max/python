@@ -6,7 +6,8 @@ from sqlalchemy import (
     String,
     DateTime,
     Boolean,
-    Text
+    Text,
+    JSON
 )
 
 from datetime import datetime
@@ -127,12 +128,7 @@ class Project(Base):
 
     video_url = Column(String)
 
-    media_url = Column(String)
-
-    media_type = Column(
-        String,
-        default="video"
-    )
+    media_files = Column(JSON, nullable=True)
 
     generated_caption = Column(
         Text,

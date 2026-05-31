@@ -8,11 +8,15 @@ const ProjectCardProject = ({ project, isEven }) => {
       <div className="w-full lg:w-1/2">
         <div className="relative group">
           <div className="absolute -inset-1 bg-[#00FFCA] rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-500"></div>
-          <img
-            src={project.media_url}
-            alt={project.title}
-            className="relative rounded-2xl border border-white/10 w-full md:max-h-[60vh] shadow-2xl"
-          />
+         <img
+  src={
+    project.media_files?.find(
+      (file) => file.type === "image"
+    )?.url
+  }
+  alt={project.title}
+  className="relative rounded-2xl border border-white/10 w-full md:max-h-[60vh] shadow-2xl"
+/>
         </div>
       </div>
       <div className="w-full lg:w-1/2 space-y-6">

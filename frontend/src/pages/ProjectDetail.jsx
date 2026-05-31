@@ -108,15 +108,25 @@ const ProjectDetail = () => {
 
         {/* Images */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {project.images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={project.title}
-              className="rounded-xl border border-white/10 h-full  min-h-[30vh] max-h-[50vh] w-full"
-            />
-          ))}
-        </div>
+  {project.media_files?.map((file, i) =>
+    file.type === "image" ? (
+      <img
+        key={i}
+        src={file.url}
+        alt={project.title}
+        className="rounded-xl border border-white/10 h-full min-h-[30vh] max-h-[50vh] w-full"
+      />
+    ) : (
+      <video
+        key={i}
+        controls
+        className="rounded-xl border border-white/10 h-full min-h-[30vh] max-h-[50vh] w-full"
+      >
+        <source src={file.url} type="video/mp4" />
+      </video>
+    )
+  )}
+</div>
 
         {/* Tech Stack */}
         <div>

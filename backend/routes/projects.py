@@ -32,7 +32,7 @@ from services.social import (
     publish_to_facebook
 )
 from auth import verify_token
-
+from typing import List
 router = APIRouter()
 
 
@@ -84,7 +84,7 @@ def create_project(
 
     # MEDIA
 
-    media: UploadFile = File(...),
+    media_files: List[UploadFile] = File(...),
 
     db: Session = Depends(get_db)
 ):
@@ -92,13 +92,29 @@ def create_project(
     # UPLOAD MEDIA
 
     try:
+        uploaded_media = []
+        video_file = None
 
-        media.file.seek(0)
+        for media in media_files:
+            media.file.seek(0)
 
-        media_url = upload_media(media)
+            url = upload_media(media)
+
+            media_type = (
+                "video"
+                if media.content_type.startswith("video")
+                else "image"
+            )
+
+            uploaded_media.append({
+                "url": url,
+                "type": media_type
+            })
+
+            if media_type == "video" and video_file is None:
+                video_file = media
 
     except Exception as exc:
-
         raise HTTPException(
             status_code=500,
             detail=str(exc)
@@ -168,16 +184,6 @@ def create_project(
 
         caption_data = None
 
-    # MEDIA TYPE
-
-    media_type = (
-        "video"
-        if media.content_type
-        and media.content_type.startswith(
-            "video"
-        )
-        else "image"
-    )
 
     # DATABASE
 
@@ -221,9 +227,7 @@ def create_project(
 
         live_link=live_link,
 
-        media_url=media_url,
-
-        media_type=media_type,
+        media_files=uploaded_media,
 
         generated_caption=generated_caption,
 
@@ -237,7 +241,7 @@ def create_project(
     db.refresh(db_project)
 
     # AUTO POST
-    print("MEDIA URL:", media_url)
+    print("MEDIA URL:", media_files)
     if caption_data:
         import time
         time.sleep(10)
@@ -255,7 +259,7 @@ def create_project(
             publish_to_linkedin(
                 db_project,
                 linkedin_caption,
-                media,
+                video_file,
                 db
             )
         

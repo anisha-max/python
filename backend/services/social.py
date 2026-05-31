@@ -204,10 +204,10 @@ def publish_to_instagram(project, caption: str) -> bool:
     )
 
     # IMAGE
-    if project.media_type == "image":
+    if not project.video_url:
 
         payload = {
-            "image_url": project.media_url,
+            "image_url": project.media_files[0]["url"],
             "caption": caption,
             "access_token": FACEBOOK_ACCESS_TOKEN,
         }
@@ -217,7 +217,7 @@ def publish_to_instagram(project, caption: str) -> bool:
 
         payload = {
             "media_type": "REELS",
-            "video_url": project.media_url,
+            "video_url": project.video_url,
             "caption": caption,
             "access_token": FACEBOOK_ACCESS_TOKEN,
         }
@@ -235,7 +235,7 @@ def publish_to_instagram(project, caption: str) -> bool:
     creation_id = create_response.json()["id"]
 
     # IMPORTANT FOR VIDEOS
-    if project.media_type == "video":
+    if project.video_url:
 
         status_url = (
             f"https://graph.facebook.com/"
@@ -299,7 +299,7 @@ def publish_to_facebook(project, caption: str) -> bool:
     }
 
     # IMAGE POST
-    if project.media_type == "image":
+    if not project.video_url:
 
         url = (
             f"https://graph.facebook.com/"
@@ -307,7 +307,7 @@ def publish_to_facebook(project, caption: str) -> bool:
         )
 
         payload = {
-            "url": project.media_url,
+            "url": project.media_files[0]["url"],
             "caption": caption,
         }
 
@@ -320,7 +320,7 @@ def publish_to_facebook(project, caption: str) -> bool:
         )
 
         payload = {
-            "file_url": project.media_url,
+            "file_url": project.media_files[0]["url"],
             "description": caption,
         }
 

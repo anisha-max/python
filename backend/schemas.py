@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 from datetime import datetime
 
-from typing import Optional
+from typing import List, Dict, Any , Optional
+
 
 
 class ProjectBase(BaseModel):
@@ -109,9 +110,7 @@ class Project(ProjectBase):
 
     id: int
 
-    media_url: str
-
-    media_type: str
+    media_files: List[Dict[str, Any]]
 
     generated_caption: Optional[str] = None
 

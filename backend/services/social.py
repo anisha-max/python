@@ -196,15 +196,46 @@ def publish_to_linkedin(project, caption: str, media, db: Session) -> bool:
     return True
 
 
+def get_video_url(project):
+    # Prefer explicit video_url
+    if getattr(project, "video_url", None):
+        return project.video_url
+
+    # Otherwise find video in media_files
+    for media in project.media_files:
+        if media.get("type") == "video":
+            return media["url"]
+
+        url = media.get("url", "")
+        if url.lower().endswith(
+            (".mp4", ".mov", ".avi", ".webm", ".mkv")
+        ):
+            return url
+
+    return None
+
+
 def publish_to_instagram(project, caption: str) -> bool:
+
+    video_url = get_video_url(project)
 
     create_url = (
         f"https://graph.facebook.com/"
         f"{INSTAGRAM_API_VERSION}/{INSTAGRAM_ACCOUNT_ID}/media"
     )
 
+    # VIDEO / REEL
+    if video_url:
+
+        payload = {
+            "media_type": "REELS",
+            "video_url": video_url,
+            "caption": caption,
+            "access_token": FACEBOOK_ACCESS_TOKEN,
+        }
+
     # IMAGE
-    if not project.video_url:
+    else:
 
         payload = {
             "image_url": project.media_files[0]["url"],
@@ -212,15 +243,7 @@ def publish_to_instagram(project, caption: str) -> bool:
             "access_token": FACEBOOK_ACCESS_TOKEN,
         }
 
-    # VIDEO / REEL
-    else:
-
-        payload = {
-            "media_type": "REELS",
-            "video_url": project.video_url,
-            "caption": caption,
-            "access_token": FACEBOOK_ACCESS_TOKEN,
-        }
+    print("INSTAGRAM PAYLOAD:", payload)
 
     create_response = requests.post(
         create_url,
@@ -234,15 +257,15 @@ def publish_to_instagram(project, caption: str) -> bool:
 
     creation_id = create_response.json()["id"]
 
-    # IMPORTANT FOR VIDEOS
-    if project.video_url:
+    # WAIT FOR VIDEO PROCESSING
+    if video_url:
 
         status_url = (
             f"https://graph.facebook.com/"
             f"{INSTAGRAM_API_VERSION}/{creation_id}"
         )
 
-        for _ in range(30):
+        for _ in range(60):
 
             status_response = requests.get(
                 status_url,
@@ -255,20 +278,27 @@ def publish_to_instagram(project, caption: str) -> bool:
 
             status_response.raise_for_status()
 
-            status = status_response.json().get("status_code")
+            data = status_response.json()
 
-            print("INSTAGRAM STATUS:", status)
+            print("INSTAGRAM STATUS:", data)
+
+            status = data.get("status_code")
 
             if status == "FINISHED":
+                print("Instagram reel ready")
                 break
 
-            elif status == "ERROR":
-                raise RuntimeError("Instagram video processing failed")
+            if status == "ERROR":
+                raise RuntimeError(
+                    "Instagram video processing failed"
+                )
 
             time.sleep(5)
 
         else:
-            raise RuntimeError("Instagram video processing timeout")
+            raise RuntimeError(
+                "Instagram video processing timeout"
+            )
 
     publish_url = (
         f"https://graph.facebook.com/"
@@ -290,16 +320,35 @@ def publish_to_instagram(project, caption: str) -> bool:
 
     return True
 
+
 def publish_to_facebook(project, caption: str) -> bool:
+
     if not FACEBOOK_PAGE_ID or not FACEBOOK_ACCESS_TOKEN:
-        raise RuntimeError("Facebook credentials are not configured.")
+        raise RuntimeError(
+            "Facebook credentials are not configured."
+        )
+
+    video_url = get_video_url(project)
 
     headers = {
         "Authorization": f"Bearer {FACEBOOK_ACCESS_TOKEN}"
     }
 
-    # IMAGE POST
-    if not project.video_url:
+    # VIDEO
+    if video_url:
+
+        url = (
+            f"https://graph-video.facebook.com/"
+            f"{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/videos"
+        )
+
+        payload = {
+            "file_url": video_url,
+            "description": caption,
+        }
+
+    # IMAGE
+    else:
 
         url = (
             f"https://graph.facebook.com/"
@@ -311,41 +360,19 @@ def publish_to_facebook(project, caption: str) -> bool:
             "caption": caption,
         }
 
-    # VIDEO POST
-    else:
-
-        url = (
-            f"https://graph-video.facebook.com/"
-            f"{FACEBOOK_API_VERSION}/{FACEBOOK_PAGE_ID}/videos"
-        )
-
-        payload = {
-            "file_url": project.media_files[0]["url"],
-            "description": caption,
-        }
+    print("FACEBOOK URL:", url)
+    print("FACEBOOK PAYLOAD:", payload)
 
     response = requests.post(
         url,
         data=payload,
         headers=headers,
-        timeout=120,
+        timeout=300,
     )
 
     print("FACEBOOK STATUS:", response.status_code)
     print("FACEBOOK RESPONSE:", response.text)
 
-    try:
-        response.raise_for_status()
-
-    except requests.HTTPError as exc:
-
-        try:
-            error_data = response.json()
-        except Exception:
-            error_data = response.text
-
-        raise RuntimeError(
-            f"Facebook publish failed: {error_data}"
-        ) from exc
+    response.raise_for_status()
 
     return True
